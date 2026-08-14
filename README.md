@@ -233,6 +233,18 @@ trained with an initial $`L=10`$:
 
 Pixels are scaled to $`[0,1]`$ for MNIST/CIFAR10; CelebA is mapped to $`[-1,1]`$.
 
+> **What's included in this repo.** Only **MNIST, CelebA, and CIFAR10** have shipped dataloaders
+> (`data/`), models (`models/`), and a `Main.py` dispatch branch. The synthetic disentanglement
+> datasets (**DSprites**, **3D Shapes**) and **ImageNet** — and the **FactorVAE/MIG** metrics —
+> are **not** wired into this repo; those experiments in the paper used external tooling
+> (`disentanglement_lib`). To run them here you must add the corresponding dataloader/model
+> (see [Extending ARD-VAE to a new dataset](#extending-ard-vae-to-a-new-dataset)) and metric code.
+
+> **CelebA data.** `data/dataloader_CelebA.py` loads `train_images_npy.npy` from the **current
+> working directory** (`data_dir = ''`). Build that NumPy array of CelebA images
+> (`64×64×3`, uint8/float) beforehand and run `Main.py` from the directory that contains it, or
+> edit `self.data_dir`.
+
 > **Note — shipped config vs. paper.** `config/local_config.py` ships **start-high** initial
 > sizes: CIFAR10 `latent_dim=256`, CelebA `latent_dim=64`, MNIST `latent_dim=128` (with
 > `kld_scalar` 0.05 / 3.0 / 0.5). The paper's main FID/precision-recall table uses **MNIST L=16**
@@ -286,6 +298,12 @@ A new dataset requires **four wired pieces** — mirror an existing one (e.g. CI
 Use MSE reconstruction (`autoencoder_loss`) for continuous pixels or BCE (`autoencoder_ce_loss`)
 for binary data (e.g. DSprites). No bandwidth/relevance hyperparameters need tuning — only
 `kld_scalar`.
+
+**Evaluation is a separate sub-pipeline.** `eval/study_fid/` is largely standalone: it has its
+**own** `local_config.py` and **duplicated** `ae_model_*` copies, and expects pre-computed
+reference statistics (`fid_stats_<dataset>.npz`). To score a new dataset (FID / precision-recall /
+active dimensions) you must **also** register it there (config + model) and provide its FID
+reference stats — training-side wiring alone is not enough.
 
 ---
 

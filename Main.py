@@ -16,21 +16,38 @@ import nvidia_smi
 
 
 def select_GPU(min_gpu_mem_frac=0.9):
-    nvidia_smi.nvmlInit()
-    device_count = nvidia_smi.nvmlDeviceGetCount()
-    for device_index in range(device_count):
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(device_index)
-        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+    """Pick a GPU with enough free memory; fall back to CPU otherwise.
 
-        print("Total memory:", info.total)
-        print("Free memory:", info.free)
-        print("Used memory:", info.used)
+    Returns (device_index, free_bytes); device_index is None when running on CPU.
+    """
+    use_gpu = None
+    free_mem = 0
 
-        if info.free > min_gpu_mem_frac*(info.total):
-            use_gpu = device_index
-            os.environ["CUDA_VISIBLE_DEVICES"] = str(use_gpu)
-            break
-    nvidia_smi.nvmlShutdown()
+    try:
+        nvidia_smi.nvmlInit()
+    except Exception as e:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+        print("No NVIDIA GPU detected; running on CPU.", e)
+        return use_gpu, free_mem
+
+    try:
+        device_count = nvidia_smi.nvmlDeviceGetCount()
+        for device_index in range(device_count):
+            handle = nvidia_smi.nvmlDeviceGetHandleByIndex(device_index)
+            info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+            print("GPU", device_index, "| total:", info.total, "| free:", info.free, "| used:", info.used)
+            if info.free > min_gpu_mem_frac * info.total:
+                use_gpu = device_index
+                free_mem = info.free
+                os.environ["CUDA_VISIBLE_DEVICES"] = str(use_gpu)
+                break
+    finally:
+        nvidia_smi.nvmlShutdown()
+
+    if use_gpu is None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+        print("No GPU with sufficient free memory; running on CPU.")
+        return use_gpu, free_mem
 
     # Allow memory growth for the selected GPU
     try:
@@ -41,7 +58,7 @@ def select_GPU(min_gpu_mem_frac=0.9):
         # Memory growth must be set before GPUs have been initialized
         print(e)
 
-    return use_gpu, info.free
+    return use_gpu, free_mem
 
 
 def set_seed(seed=0):
@@ -60,7 +77,10 @@ def main():
     run_id = args.run_id
     set_seed(run_id-1)
     use_gpu, mem_free = select_GPU()
-    print("Selected GPU for training : " + str(use_gpu) + " with available memory : " + str(mem_free//(1024*1024*1024)))
+    if use_gpu is None:
+        print("Training on CPU.")
+    else:
+        print("Selected GPU " + str(use_gpu) + " with free memory (GB): " + str(mem_free//(1024*1024*1024)))
 
     config = configurations[args.config_id]
 
