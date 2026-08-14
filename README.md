@@ -233,12 +233,13 @@ trained with an initial $`L=10`$:
 
 Pixels are scaled to $`[0,1]`$ for MNIST/CIFAR10; CelebA is mapped to $`[-1,1]`$.
 
-> **What's included in this repo.** Only **MNIST, CelebA, and CIFAR10** have shipped dataloaders
-> (`data/`), models (`models/`), and a `Main.py` dispatch branch. The synthetic disentanglement
-> datasets (**DSprites**, **3D Shapes**) and **ImageNet** — and the **FactorVAE/MIG** metrics —
-> are **not** wired into this repo; those experiments in the paper used external tooling
-> (`disentanglement_lib`). To run them here you must add the corresponding dataloader/model
-> (see [Extending ARD-VAE to a new dataset](#extending-ard-vae-to-a-new-dataset)) and metric code.
+> **What's included in this repo.** This snapshot ships dataloaders (`data/`), models (`models/`),
+> and `Main.py` dispatch branches for **MNIST, CelebA, and CIFAR10**. The paper's full evaluation
+> also covers **DSprites, 3D Shapes, and ImageNet**, and the training/eval code already includes
+> the hooks for them (e.g. `trainer.py` and the sample generator use a **Bernoulli/logits decoder**
+> for `DSprites`). Their **dataloaders/models** simply aren't part of this snapshot — add them by
+> following [Extending ARD-VAE to a new dataset](#extending-ard-vae-to-a-new-dataset). The
+> disentanglement metrics (FactorVAE/MIG) follow the standard `disentanglement_lib` setup.
 
 > **CelebA data.** `data/dataloader_CelebA.py` loads `train_images_npy.npy` from the **current
 > working directory** (`data_dir = ''`). Build that NumPy array of CelebA images
