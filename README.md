@@ -16,6 +16,14 @@ Code: https://github.com/Surojit-Utah/ARD-VAE
 
 Paper (arXiv): https://arxiv.org/abs/2501.10901
 
+<p align="center">
+  <img src="images/invariance_3DShapes.png" alt="3D Shapes latent traversals: relevant axes change the generated factor while collapsed axes leave the output unchanged" width="95%">
+</p>
+
+<p align="center"><em>On 3D Shapes, traversing a <strong>relevant</strong> latent axis changes a single
+generative factor, while traversing a <strong>collapsed</strong> (pruned) axis leaves the decoder
+output essentially unchanged — exactly the behavior ARD-VAE uses to identify the relevant axes.</em></p>
+
 ---
 
 ## Table of Contents
@@ -129,6 +137,26 @@ and the **relevance score** is the weighted variance
 $`\hat{\boldsymbol\sigma}^2_{\mathbf{w}} = \mathbf{w}_{\hat\sigma} \odot \hat{\boldsymbol\sigma}^2`$.
 The **active** dimensions are the smallest set explaining ~99% of the score. This same importance
 measure also works to count active axes of a plain VAE and its variants.
+
+**Why the relevance score matters.** The raw estimated variance alone is noisy and its scale
+varies with the initial latent size, making a single threshold unreliable. Weighting by the
+decoder-sensitivity Jacobian squashes spurious axes and yields a clean, size-agnostic profile
+(right) from which the active count is read off:
+
+<p align="center">
+  <img src="images/MNIST_analysis.png" alt="MNIST: (i) estimated variance per dimension across latent sizes; (ii) relevance score cleanly separates relevant from collapsed axes" width="90%">
+</p>
+
+The same estimated-variance profile holds across real datasets — a few high-variance relevant
+axes and many collapsed ones:
+
+<p align="center">
+  <img src="images/Est_Var_MNIST.png" alt="Estimated variance per latent dimension on MNIST" width="32%">
+  <img src="images/Est_Var_CelebA.png" alt="Estimated variance per latent dimension on CelebA" width="32%">
+  <img src="images/Est_Var_CIFAR10.png" alt="Estimated variance per latent dimension on CIFAR10" width="32%">
+</p>
+<p align="center"><em>Estimated variance <code>b/a</code> per latent axis (sorted) for MNIST, CelebA,
+and CIFAR10 — relevant axes carry high variance; the rest collapse toward zero.</em></p>
 
 ### Training algorithm
 

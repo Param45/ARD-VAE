@@ -9,6 +9,8 @@
 
 # ignore all .png files
 *.png
+# but keep README figures
+!images/*.png
 
 # only ignore the log files in the current directory
 Output/
