@@ -1,6 +1,8 @@
 # Added by SS
 # ignore all .txt files
 *.txt
+# but keep requirements.txt
+!requirements.txt
 
 # ignore all .pdf files
 *.pdf
@@ -11,6 +13,10 @@
 # only ignore the log files in the current directory
 Output/
 logs/
+
+# Paper sources and local working notes (not tracked)
+Paper/
+TODO.md
 
 # ignores all .md files
 .md

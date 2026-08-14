@@ -1,0 +1,8 @@
+# ARD-VAE (TensorFlow / Keras)
+tensorflow
+numpy
+scipy
+matplotlib
+imageio
+tqdm
+nvidia-ml-py3
