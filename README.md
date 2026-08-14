@@ -1,5 +1,9 @@
 # ARD-VAE: Finding the Relevant Latent Dimensions of Variational Autoencoders
 
+<p align="center">
+  <img src="https://img.shields.io/badge/WACV%202025-Oral%20Presentation-4B0082?style=for-the-badge" alt="Selected for an oral presentation at WACV 2025">
+</p>
+
 Official implementation of **"ARD-VAE: A Statistical Formulation to Find the Relevant Latent
 Dimensions of Variational Autoencoders"** by **Surojit Saha, Sarang Joshi, and Ross Whitaker**
 (University of Utah), **WACV 2025**.
