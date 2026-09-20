@@ -87,21 +87,28 @@ def get_activations(images, sess, batch_size=50, verbose=False):
     if batch_size > n_images:
         print("warning: batch size is bigger than the data size. setting batch size to data size")
         batch_size = n_images
-    n_batches = n_images // batch_size
+    n_batches = int(np.ceil(n_images / batch_size))
     pred_arr = np.empty((n_images, 2048))
     for i in range(n_batches):
         if verbose:
             print("\rPropagating batch %d/%d" % (i + 1, n_batches), end="", flush=True)
         start = i * batch_size
-
-        if start + batch_size < n_images:
-            end = start + batch_size
-        else:
-            end = n_images
+        end = min(start + batch_size, n_images)
+        cur_batch_size = end - start
 
         batch = images[start:end]
-        pred = sess.run(inception_layer, {'FID_Inception_Net/ExpandDims:0': batch})
-        pred_arr[start:end] = pred.reshape(batch_size, -1)
+        try:
+            pred = sess.run(inception_layer, {'FID_Inception_Net/ExpandDims:0': batch})
+            pred_arr[start:end] = pred.reshape(cur_batch_size, -1)
+        except ValueError as e:
+            if "ExpandDims" in str(e):
+                sub_preds = []
+                for j in range(cur_batch_size):
+                    p = sess.run(inception_layer, {'FID_Inception_Net/ExpandDims:0': batch[j:j+1]})
+                    sub_preds.append(p.reshape(-1))
+                pred_arr[start:end] = np.array(sub_preds)
+            else:
+                raise e
     if verbose:
         print(" done")
     return pred_arr
@@ -222,20 +229,28 @@ def get_activations_from_files(files, sess, batch_size=50, verbose=False):
     if batch_size > n_images:
         print("warning: batch size is bigger than the data size. setting batch size to data size")
         batch_size = n_images
-    n_batches = n_images // batch_size + 1
+    n_batches = int(np.ceil(n_images / batch_size))
     pred_arr = np.empty((n_images, 2048))
     for i in range(n_batches):
         if verbose:
             print("\rPropagating batch %d/%d" % (i + 1, n_batches), end="", flush=True)
         start = i * batch_size
-        if start + batch_size < n_images:
-            end = start + batch_size
-        else:
-            end = n_images
+        end = min(start + batch_size, n_images)
+        cur_batch_size = end - start
 
         batch = load_image_batch(files[start:end])
-        pred = sess.run(inception_layer, {'FID_Inception_Net/ExpandDims:0': batch})
-        pred_arr[start:end] = pred.reshape(batch_size, -1)
+        try:
+            pred = sess.run(inception_layer, {'FID_Inception_Net/ExpandDims:0': batch})
+            pred_arr[start:end] = pred.reshape(cur_batch_size, -1)
+        except ValueError as e:
+            if "ExpandDims" in str(e):
+                sub_preds = []
+                for j in range(cur_batch_size):
+                    p = sess.run(inception_layer, {'FID_Inception_Net/ExpandDims:0': batch[j:j+1]})
+                    sub_preds.append(p.reshape(-1))
+                pred_arr[start:end] = np.array(sub_preds)
+            else:
+                raise e
         del batch  # clean up memory
     if verbose:
         print(" done")
