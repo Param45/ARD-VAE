@@ -51,7 +51,7 @@ class dataloader_cifar10():
 
         # Test the overlap between the training data and the T-Stat samples
         train_lag_indices_overlap = set(Train_samples_indices).intersection(set(T_Stat_samples_indices))
-        assert len(train_lag_indices_overlap) is 0, "There is overlap between the training and T-Stat samples"
+        assert len(train_lag_indices_overlap) == 0, "There is overlap between the training and T-Stat samples"
 
         # Data to be used in training GENs
         x_train_sgd = self.x_train[Train_samples_indices]

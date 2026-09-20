@@ -8,40 +8,47 @@ from gen_samples import get_encoded_statistics, get_generated_samples
 import argparse
 from config.local_config import configurations
 import imageio
-import nvidia_smi
-import socket
+try:
+    import nvidia_smi
+    HAS_NVIDIA_SMI = True
+except ImportError:
+    HAS_NVIDIA_SMI = False
 
 
-def select_GPU(min_gpu_mem_frac=0.7):
-    hostname = socket.gethostname()
-    nvidia_smi.nvmlInit()
-    device_count = nvidia_smi.nvmlDeviceGetCount()
-    for device_index in range(device_count):
-        if device_index==1 and 'blackjack' in hostname:
-            continue
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(device_index)
-        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+def select_GPU(gpu_id=None, min_gpu_mem_frac=0.7):
+    if gpu_id is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
 
-        print("Total memory:", info.total)
-        print("Free memory:", info.free)
-        print("Used memory:", info.used)
+    use_gpu = None
+    free_mem = 0
 
-        if info.free > min_gpu_mem_frac*(info.total):
-            use_gpu = device_index
-            os.environ["CUDA_VISIBLE_DEVICES"] = str(use_gpu)
-            break
-    nvidia_smi.nvmlShutdown()
+    if HAS_NVIDIA_SMI and gpu_id is None:
+        try:
+            nvidia_smi.nvmlInit()
+            device_count = nvidia_smi.nvmlDeviceGetCount()
+            for device_index in range(device_count):
+                handle = nvidia_smi.nvmlDeviceGetHandleByIndex(device_index)
+                info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+                if info.free > min_gpu_mem_frac * info.total:
+                    use_gpu = device_index
+                    free_mem = info.free
+                    os.environ["CUDA_VISIBLE_DEVICES"] = str(use_gpu)
+                    break
+            nvidia_smi.nvmlShutdown()
+        except Exception:
+            pass
 
-    # Allow memory growth for the selected GPU
     try:
-        gpus = tf.config.experimental.list_physical_devices('GPU')
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        # Memory growth must be set before GPUs have been initialized
-        print(e)
+        gpus = tf.config.list_physical_devices('GPU')
+        if gpus:
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            if use_gpu is None:
+                use_gpu = 0
+    except Exception:
+        pass
 
-    return use_gpu, info.free
+    return use_gpu, free_mem
 
 
 ###################
@@ -65,12 +72,19 @@ if __name__=="__main__":
     parser.add_argument("--config_id", type=int, required=True)
     parser.add_argument("--latent_dim", type=int, required=True)
     parser.add_argument("--gen_type", type=str, required=True, help="Can be one of the following options: generation, reconstruction")
+    parser.add_argument("--eval_ids", type=int, nargs='+', default=[1], help="Run IDs to evaluate, e.g. --eval_ids 1 2 3 4 5")
+    parser.add_argument("--gpu", type=str, default=None, help="GPU index to use")
     args = parser.parse_args()
 
     latent_dim = args.latent_dim
     set_seed()
     mode = args.gen_type
-    config = configurations[0][args.config_id]
+    if args.config_id in configurations:
+        config = configurations[args.config_id]
+    elif 0 in configurations and args.config_id in configurations[0]:
+        config = configurations[0][args.config_id]
+    else:
+        config = configurations[0]
 
     # model configurations
     model_name                  = config['model_name']
@@ -83,10 +97,13 @@ if __name__=="__main__":
     perc_explained_var          = 99.00
 
     basedir                     = os.path.join('..',  '..', '..', 'logs', dataset_name, 'Dim_'+str(latent_dim))
-    eval_ids                    = np.arange(1, 2, 1).tolist()
+    eval_ids                    = args.eval_ids
 
-    use_gpu, mem_free = select_GPU()
-    print("Selected GPU for training : " + str(use_gpu) + " with available memory : " + str(mem_free//(1024*1024*1024)))
+    use_gpu, mem_free = select_GPU(gpu_id=args.gpu)
+    if use_gpu is not None:
+        print(f"Selected GPU {use_gpu} for evaluation")
+    else:
+        print("Evaluating on CPU")
 
     # Log number of relevant axes
     log_dir = os.path.join('logs', dataset_name, mode, 'Dim_'+str(latent_dim))

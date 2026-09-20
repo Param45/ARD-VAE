@@ -57,7 +57,7 @@ class Train():
         self.beta0 = np.zeros(self.latent_dim, dtype=np.float32)
         self.alpha = self.alpha0
         self.beta = self.beta0
-        self.beta_tensor = tf.compat.v1.get_variable('beta_arr', shape=(self.latent_dim), initializer=tf.constant_initializer(self.beta), trainable=False)
+        self.beta_tensor = tf.Variable(self.beta, dtype=tf.float32, trainable=False, name='beta_arr')
         self.beta_tensor_update = self.beta_tensor
         self.total_t_stat_samples = self.dataloader.t_stat_samples
         self.samples_t_stat = np.zeros((self.encoder.axis_samples, self.latent_dim), dtype=np.float32)
