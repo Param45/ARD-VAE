@@ -1,9 +1,15 @@
 import tensorflow.keras as keras
 import os
+import sys
 import numpy as np
 import matplotlib
 matplotlib.use('agg')
 import copy
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+repo_root = os.path.abspath(os.path.join(current_dir, "../../../../"))
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
 
 
 def set_seed(seed=0):

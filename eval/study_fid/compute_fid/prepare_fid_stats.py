@@ -2,6 +2,7 @@
 using Inception-v3 for Fréchet Inception Distance (FID) computation.
 """
 import os
+import sys
 import argparse
 import numpy as np
 import tensorflow as tf
