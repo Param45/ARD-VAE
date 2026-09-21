@@ -5,10 +5,32 @@ import tensorflow.keras as keras
 import copy
 import os
 
+def ensure_cifar10_cached():
+    import urllib.request
+    import tarfile
+    keras_dir = os.path.expanduser('~/.keras/datasets')
+    os.makedirs(keras_dir, exist_ok=True)
+    tar_path = os.path.join(keras_dir, 'cifar-10-batches-py.tar.gz')
+    extracted_dir = os.path.join(keras_dir, 'cifar-10-batches-py')
+
+    if not os.path.exists(extracted_dir) and not os.path.exists(tar_path):
+        url = "https://huggingface.co/datasets/liangnanying/cifar-10-python/resolve/main/cifar-10-python.tar.gz"
+        print("Downloading CIFAR-10 from fast CDN mirror (completes in seconds)...")
+        try:
+            urllib.request.urlretrieve(url, tar_path)
+            print("Downloaded! Extracting archive...")
+            with tarfile.open(tar_path, 'r:gz') as tar:
+                tar.extractall(path=keras_dir)
+            print("CIFAR-10 successfully cached in ~/.keras/datasets/!")
+        except Exception as e:
+            print("Note: Fast mirror download skipped, using default Keras source:", e)
+
+
 class dataloader_cifar10():
     def __init__(self, dataset_name, t_stat_samples, batch_size=100):
 
         if dataset_name=='CIFAR10':
+            ensure_cifar10_cached()
             (self.imgs_train, _), (_, _) = keras.datasets.cifar10.load_data()
             self.imgs_train = (self.imgs_train/255.0).astype(np.float32)
             self.val_data_count = (10000//batch_size)*batch_size
