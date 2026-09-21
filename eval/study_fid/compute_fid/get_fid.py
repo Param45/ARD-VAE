@@ -30,12 +30,23 @@ class InvalidFIDException(Exception):
 
 
 def create_inception_graph(pth):
-    """Creates a graph from saved GraphDef file."""
-    # Creates graph from saved graph_def.pb.
+    """Creates a graph from saved GraphDef file with dynamic batch input."""
     with tf1.io.gfile.GFile(pth, 'rb') as f:
         graph_def = tf1.GraphDef()
         graph_def.ParseFromString(f.read())
-        _ = tf1.import_graph_def(graph_def, name='FID_Inception_Net')
+        try:
+            # Map ExpandDims:0 to dynamic placeholder for fast parallel GPU batching
+            batch_input = tf1.placeholder(tf1.float32, shape=[None, None, None, 3], name='batch_input')
+            _ = tf1.import_graph_def(graph_def, input_map={'ExpandDims:0': batch_input}, name='FID_Inception_Net')
+        except Exception:
+            _ = tf1.import_graph_def(graph_def, name='FID_Inception_Net')
+
+
+def _get_input_tensor(sess):
+    try:
+        return sess.graph.get_tensor_by_name('FID_Inception_Net/batch_input:0')
+    except Exception:
+        return sess.graph.get_tensor_by_name('FID_Inception_Net/ExpandDims:0')
 
 
 # -------------------------------------------------------------------------------
@@ -83,6 +94,7 @@ def get_activations(images, sess, batch_size=50, verbose=False):
        activations of the given tensor when feeding inception with the query tensor.
     """
     inception_layer = _get_inception_layer(sess)
+    input_tensor = _get_input_tensor(sess)
     n_images = images.shape[0]
     if batch_size > n_images:
         print("warning: batch size is bigger than the data size. setting batch size to data size")
@@ -98,7 +110,7 @@ def get_activations(images, sess, batch_size=50, verbose=False):
 
         batch = images[start:end]
         try:
-            pred = sess.run(inception_layer, {'FID_Inception_Net/ExpandDims:0': batch})
+            pred = sess.run(inception_layer, {input_tensor: batch})
             pred_arr[start:end] = pred.reshape(cur_batch_size, -1)
         except ValueError as e:
             if "ExpandDims" in str(e):
@@ -225,6 +237,7 @@ def get_activations_from_files(files, sess, batch_size=50, verbose=False):
        activations of the given tensor when feeding inception with the query tensor.
     """
     inception_layer = _get_inception_layer(sess)
+    input_tensor = _get_input_tensor(sess)
     n_images = len(files)
     if batch_size > n_images:
         print("warning: batch size is bigger than the data size. setting batch size to data size")
@@ -240,7 +253,7 @@ def get_activations_from_files(files, sess, batch_size=50, verbose=False):
 
         batch = load_image_batch(files[start:end])
         try:
-            pred = sess.run(inception_layer, {'FID_Inception_Net/ExpandDims:0': batch})
+            pred = sess.run(inception_layer, {input_tensor: batch})
             pred_arr[start:end] = pred.reshape(cur_batch_size, -1)
         except ValueError as e:
             if "ExpandDims" in str(e):
