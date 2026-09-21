@@ -90,7 +90,11 @@ def main():
     else:
         print(f"Training on GPU {use_gpu}")
 
-    config = configurations[args.config_id].copy()
+    if isinstance(configurations, tuple):
+        config_dict = configurations[0]
+    else:
+        config_dict = configurations
+    config = config_dict[args.config_id].copy()
 
     ########################
     # Some Network Constants

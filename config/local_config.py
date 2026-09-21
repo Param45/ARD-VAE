@@ -128,5 +128,5 @@ configurations = \
      'conv_kernel_initializer_method': 'he_normal',
      'kld_scalar': 0.05,
      'fid_samples': 10000,
-    },
- },
+    }
+ }
