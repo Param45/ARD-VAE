@@ -43,10 +43,13 @@ def create_inception_graph(pth):
 
 
 def _get_input_tensor(sess):
-    try:
-        return sess.graph.get_tensor_by_name('FID_Inception_Net/batch_input:0')
-    except Exception:
-        return sess.graph.get_tensor_by_name('FID_Inception_Net/ExpandDims:0')
+    """Finds the appropriate input tensor for Inception net."""
+    for name in ['batch_input:0', 'FID_Inception_Net/batch_input:0', 'FID_Inception_Net/ExpandDims:0', 'ExpandDims:0']:
+        try:
+            return sess.graph.get_tensor_by_name(name)
+        except Exception:
+            pass
+    raise ValueError("Could not find Inception input tensor in graph")
 
 
 # -------------------------------------------------------------------------------
@@ -112,15 +115,12 @@ def get_activations(images, sess, batch_size=50, verbose=False):
         try:
             pred = sess.run(inception_layer, {input_tensor: batch})
             pred_arr[start:end] = pred.reshape(cur_batch_size, -1)
-        except ValueError as e:
-            if "ExpandDims" in str(e):
-                sub_preds = []
-                for j in range(cur_batch_size):
-                    p = sess.run(inception_layer, {'FID_Inception_Net/ExpandDims:0': batch[j:j+1]})
-                    sub_preds.append(p.reshape(-1))
-                pred_arr[start:end] = np.array(sub_preds)
-            else:
-                raise e
+        except Exception:
+            sub_preds = []
+            for j in range(cur_batch_size):
+                p = sess.run(inception_layer, {input_tensor: batch[j:j+1]})
+                sub_preds.append(p.reshape(-1))
+            pred_arr[start:end] = np.array(sub_preds)
     if verbose:
         print(" done")
     return pred_arr
@@ -255,15 +255,12 @@ def get_activations_from_files(files, sess, batch_size=50, verbose=False):
         try:
             pred = sess.run(inception_layer, {input_tensor: batch})
             pred_arr[start:end] = pred.reshape(cur_batch_size, -1)
-        except ValueError as e:
-            if "ExpandDims" in str(e):
-                sub_preds = []
-                for j in range(cur_batch_size):
-                    p = sess.run(inception_layer, {'FID_Inception_Net/ExpandDims:0': batch[j:j+1]})
-                    sub_preds.append(p.reshape(-1))
-                pred_arr[start:end] = np.array(sub_preds)
-            else:
-                raise e
+        except Exception:
+            sub_preds = []
+            for j in range(cur_batch_size):
+                p = sess.run(inception_layer, {input_tensor: batch[j:j+1]})
+                sub_preds.append(p.reshape(-1))
+            pred_arr[start:end] = np.array(sub_preds)
         del batch  # clean up memory
     if verbose:
         print(" done")

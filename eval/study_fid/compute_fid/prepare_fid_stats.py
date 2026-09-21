@@ -25,6 +25,7 @@ def prepare_mnist_stats(save_dir, sample_count=10000):
     # Repeat grayscale to 3 channels (RGB) and ensure uint8/float in [0, 255]
     rgb = np.repeat(np.expand_dims(padded, axis=-1), 3, axis=-1).astype(np.float32)
 
+    tf1.reset_default_graph()
     inception_path = get_fid.check_or_download_inception(None)
     get_fid.create_inception_graph(str(inception_path))
 
@@ -71,6 +72,7 @@ def prepare_cifar10_stats(save_dir, sample_count=10000):
     (x_train, _), _ = tf.keras.datasets.cifar10.load_data()
     x_train = x_train[:sample_count].astype(np.float32)
 
+    tf1.reset_default_graph()
     inception_path = get_fid.check_or_download_inception(None)
     get_fid.create_inception_graph(str(inception_path))
 
