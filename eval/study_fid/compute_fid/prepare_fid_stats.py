@@ -39,41 +39,11 @@ def prepare_mnist_stats(save_dir, sample_count=10000):
     return out_path
 
 
-def ensure_cifar10_cached():
-    import urllib.request
-    import tarfile
-    import shutil
-    keras_dir = os.path.expanduser('~/.keras/datasets')
-    os.makedirs(keras_dir, exist_ok=True)
-    tar_path = os.path.join(keras_dir, 'cifar-10-batches-py.tar.gz')
-    extracted_dir = os.path.join(keras_dir, 'cifar-10-batches-py')
-
-    # If already fully extracted, we are good
-    if os.path.exists(extracted_dir) and len(os.listdir(extracted_dir)) >= 5:
-        return
-
-    # If partial or corrupted download exists, remove it
-    if os.path.exists(tar_path):
-        try:
-            if os.path.getsize(tar_path) < 160 * 1024 * 1024:
-                os.remove(tar_path)
-        except OSError:
-            pass
-
-    if not os.path.exists(extracted_dir) or len(os.listdir(extracted_dir)) < 5:
-        url = "https://huggingface.co/datasets/liangnanying/cifar-10-python/resolve/main/cifar-10-python.tar.gz"
-        print("Downloading CIFAR-10 from fast CDN mirror (completes in ~3 seconds)...")
-        try:
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=30) as response, open(tar_path, 'wb') as out_file:
-                shutil.copyfileobj(response, out_file)
-            print("Downloaded! Extracting archive...")
-            with tarfile.open(tar_path, 'r:gz') as tar:
-                tar.extractall(path=keras_dir)
-            print("CIFAR-10 successfully cached in ~/.keras/datasets/!")
-        except Exception as e:
-            print("Note: Fast mirror download failed, falling back:", e)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+repo_root = os.path.abspath(os.path.join(current_dir, "../../../"))
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
+from data.cifar10_loader import load_cifar10
 
 
 def prepare_cifar10_stats(save_dir, sample_count=10000):
@@ -84,8 +54,7 @@ def prepare_cifar10_stats(save_dir, sample_count=10000):
         return out_path
 
     print("Computing Inception reference statistics for CIFAR-10...")
-    ensure_cifar10_cached()
-    (x_train, _), _ = tf.keras.datasets.cifar10.load_data()
+    (x_train, _), _ = load_cifar10()
     x_train = x_train[:sample_count].astype(np.float32)
 
     tf1.reset_default_graph()

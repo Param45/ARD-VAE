@@ -66,7 +66,8 @@ def load_data(dataset_name):
         imgs_train = 2*imgs_train - 1
 
     if dataset_name == 'CIFAR10':
-        (imgs_train, _), (_, _) = keras.datasets.cifar10.load_data()
+        from data.cifar10_loader import load_cifar10
+        (imgs_train, _), (_, _) = load_cifar10()
         imgs_train = (imgs_train / 255.0).astype(np.float32)
 
     if dataset_name == 'MNIST':
